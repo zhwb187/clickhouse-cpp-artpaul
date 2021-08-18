@@ -16,6 +16,10 @@
 #   include <unistd.h>
 #endif
 
+#if defined(WIN32)
+#   include <tuple>
+#endif
+
 namespace clickhouse {
 namespace {
 
@@ -303,11 +307,12 @@ SOCKET SocketConnect(const NetworkAddress& addr) {
 
 ssize_t Poll(struct pollfd* fds, int nfds, int timeout) noexcept {
 #if defined(_win_)
-    int rval = WSAPoll(fds, nfds, timeout);
+    //int rval = WSAPoll(fds, nfds, timeout);
+    return WSAPoll(fds, nfds, timeout);
 #else
     return poll(fds, nfds, timeout);
 #endif
-    return -1;
+    //return -1;
 }
 
 }

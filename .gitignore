@@ -15,6 +15,7 @@ vs/
 .vscode/
 
 # Build results
+vsbuild-*/
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
@@ -23,6 +24,7 @@ x64/
 x86/
 bld/
 build/
+buildd/
 [Bb]in/
 [Oo]bj/
 [Ll]og/
