@@ -27,16 +27,16 @@ SET ( clickhouse-cpp-lib-src
     query.cpp
 )
 
-ADD_LIBRARY (clickhouse-cpp-lib SHARED ${clickhouse-cpp-lib-src})
+#ADD_LIBRARY (clickhouse-cpp-lib SHARED ${clickhouse-cpp-lib-src})
 
-SET_TARGET_PROPERTIES(clickhouse-cpp-lib
-    PROPERTIES LINKER_LANGUAGE CXX)
+#SET_TARGET_PROPERTIES(clickhouse-cpp-lib
+#    PROPERTIES LINKER_LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES (clickhouse-cpp-lib
-    absl-lib
-    cityhash-lib
-    lz4-lib
-)
+#TARGET_LINK_LIBRARIES (clickhouse-cpp-lib
+#    absl-lib
+#    cityhash-lib
+#    lz4-lib
+#)
 
 ADD_LIBRARY (clickhouse-cpp-lib-static STATIC ${clickhouse-cpp-lib-src})
 TARGET_LINK_LIBRARIES (clickhouse-cpp-lib-static
@@ -44,3 +44,12 @@ TARGET_LINK_LIBRARIES (clickhouse-cpp-lib-static
     cityhash-lib
     lz4-lib
 )
+
+SET(LIB_NAME clickhouse)
+IF(MSVC)
+    SET(LIB_NAME "lib${LIB_NAME}_vc140")
+ENDIF()
+IF(${CMAKE_BUILD_TYPE} STREQUAL Debug)
+    SET(LIB_NAME "${LIB_NAME}_d")
+ENDIF()
+SET_TARGET_PROPERTIES(clickhouse-cpp-lib-static PROPERTIES OUTPUT_NAME "${LIB_NAME}")

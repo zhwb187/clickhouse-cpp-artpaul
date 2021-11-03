@@ -270,7 +270,8 @@ SOCKET SocketConnect(const NetworkAddress& addr) {
 
         if (connect(s, res->ai_addr, (int)res->ai_addrlen) != 0) {
             int err = errno;
-            if (err == EINPROGRESS || err == EAGAIN || err == EWOULDBLOCK) {
+            //if (err == EINPROGRESS || err == EAGAIN || err == EWOULDBLOCK) {
+            if (err == 0 || err == EINPROGRESS || err == EAGAIN || err == EWOULDBLOCK) {
                 pollfd fd;
                 fd.fd = s;
                 fd.events = POLLOUT;

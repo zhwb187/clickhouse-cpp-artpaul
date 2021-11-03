@@ -25,6 +25,7 @@ PROJECT (CLICKHOUSE-CLIENT)
         ELSE ()
             SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GO_FLAG} -pthread -Wall -Wextra -Werror")
         ENDIF ()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
         SET (CMAKE_EXE_LINKER_FLAGS, "${CMAKE_EXE_LINKER_FLAGS} -lpthread")
     ENDIF ()
 
