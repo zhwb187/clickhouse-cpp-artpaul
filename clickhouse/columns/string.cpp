@@ -37,15 +37,24 @@ void ColumnFixedString::Append(ColumnRef column) {
 }
 
 bool ColumnFixedString::Load(CodedInputStream* input, size_t rows) {
+    //for (size_t i = 0; i < rows; ++i) {
+    //    std::string s;
+    //    s.resize(string_size_);
+
+    //    if (!WireFormat::ReadBytes(input, &s[0], s.size())) {
+    //        return false;
+    //    }
+
+    //    data_.push_back(std::move(s));
+    //}
+    data_.resize(rows);
     for (size_t i = 0; i < rows; ++i) {
-        std::string s;
+        auto& s = data_[i];
         s.resize(string_size_);
 
         if (!WireFormat::ReadBytes(input, &s[0], s.size())) {
             return false;
         }
-
-        data_.push_back(std::move(s));
     }
 
     return true;
@@ -106,14 +115,22 @@ void ColumnString::Append(ColumnRef column) {
 }
 
 bool ColumnString::Load(CodedInputStream* input, size_t rows) {
+    //for (size_t i = 0; i < rows; ++i) {
+    //    std::string s;
+
+    //    if (!WireFormat::ReadString(input, &s)) {
+    //        return false;
+    //    }
+
+    //    data_.push_back(std::move(s));
+    //}
+    data_.resize(rows);
     for (size_t i = 0; i < rows; ++i) {
-        std::string s;
+        auto& s = data_[i];
 
         if (!WireFormat::ReadString(input, &s)) {
             return false;
         }
-
-        data_.push_back(std::move(s));
     }
 
     return true;

@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+#include <thread>
 
 namespace clickhouse {
 
@@ -89,9 +90,17 @@ protected:
     size_t DoNext(const void** ptr, size_t len) override;
 
 private:
+    void RecvData();
+    void SwitchBuffer();
+
+private:
     InputStream* const slave_;
     ArrayInput array_input_;
-    std::vector<uint8_t> buffer_;
+    std::vector<std::vector<uint8_t>> buffers_;
+    int read_index_;
+    int recv_index_;
+    size_t recv_size_;
+    std::thread recv_thr_;
 };
 
 }
