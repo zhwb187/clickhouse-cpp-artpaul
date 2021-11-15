@@ -73,7 +73,7 @@ std::ostream& operator<<(std::ostream& os, const ClientOptions& opt) {
 
 class Client::Impl {
 public:
-     Impl(const ClientOptions& opts, size_t input_buflen, size_t output_buflen);
+     Impl(const ClientOptions& opts, size_t input_buflen, size_t input_bufnum, size_t output_buflen);
     ~Impl();
 
     void ExecuteQuery(Query query);
@@ -155,12 +155,12 @@ private:
 };
 
 
-Client::Impl::Impl(const ClientOptions& opts, size_t input_buflen, size_t output_buflen)
+Client::Impl::Impl(const ClientOptions& opts, size_t input_buflen, size_t input_bufnum, size_t output_buflen)
     : options_(opts)
     , events_(nullptr)
     , socket_(-1)
     , socket_input_(socket_)
-    , buffered_input_(&socket_input_, input_buflen)
+    , buffered_input_(&socket_input_, input_buflen, input_bufnum)
     , input_(&buffered_input_)
     , socket_output_(socket_)
     , buffered_output_(&socket_output_, output_buflen)
@@ -773,9 +773,9 @@ void Client::Impl::RetryGuard(std::function<void()> func) {
     }
 }
 
-Client::Client(const ClientOptions& opts, size_t input_buflen, size_t output_buflen)
+Client::Client(const ClientOptions& opts, size_t input_buflen, size_t input_bufnum, size_t output_buflen)
     : options_(opts)
-    , impl_(new Impl(opts, input_buflen, output_buflen))
+    , impl_(new Impl(opts, input_buflen, input_bufnum, output_buflen))
 {
 }
 

@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <vector>
 #include <thread>
+#include <mutex>
+#include <condition_variable>
 
 namespace clickhouse {
 
@@ -41,12 +43,12 @@ protected:
 
 
 /**
- * A ZeroCopyInput stream backed by an in-memory array of bytes.
- */
+* A ZeroCopyInput stream backed by an in-memory array of bytes.
+*/
 class ArrayInput : public ZeroCopyInput {
 public:
-     ArrayInput() noexcept;
-     ArrayInput(const void* buf, size_t len) noexcept;
+    ArrayInput() noexcept;
+    ArrayInput(const void* buf, size_t len) noexcept;
     ~ArrayInput() override;
 
     /// Number of bytes available in the stream.
@@ -80,7 +82,7 @@ private:
 
 class BufferedInput : public ZeroCopyInput {
 public:
-     BufferedInput(InputStream* slave, size_t buflen = 8192);
+    BufferedInput(InputStream* slave, size_t buflen = 8192, size_t bufnum = 2);
     ~BufferedInput() override;
 
     void Reset();
@@ -96,10 +98,14 @@ private:
 private:
     InputStream* const slave_;
     ArrayInput array_input_;
-    std::vector<std::vector<uint8_t>> buffers_;
     int read_index_;
     int recv_index_;
-    size_t recv_size_;
+    int ready_bufnum_;
+    int bufnum_;
+    std::vector<std::vector<uint8_t>> buffers_;
+    std::vector<size_t> recv_sizes_;
+    std::mutex recv_mtx_;
+    std::condition_variable recv_cv_;
     std::thread recv_thr_;
 };
 
