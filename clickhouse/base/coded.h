@@ -23,6 +23,8 @@ public:
 
     // Read an unsigned integer with Varint encoding.
     bool ReadVarint64(uint64_t* value);
+    // Skip an unsigned integer with Varint encoding.
+    bool SkipVarint64();
 
     // Read raw bytes, copying them into the given buffer.
     bool ReadRaw(void* buffer, size_t size);
@@ -35,6 +37,8 @@ public:
     // could claim that a string is going to be MAX_INT bytes long in order to
     // crash the server because it can't allocate this much space at once.
     bool ReadString(std::string* buffer, int size);
+    bool ReadStringRows(std::vector<std::string>& data, size_t rows);
+    bool ReadFixedStringRows(std::vector<std::string>& data, size_t rows, size_t string_size);
 
     // Skips a number of bytes.  Returns false if an underlying read error
     // occurs.

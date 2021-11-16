@@ -73,7 +73,7 @@ std::ostream& operator<<(std::ostream& os, const ClientOptions& opt) {
 
 class Client::Impl {
 public:
-     Impl(const ClientOptions& opts, size_t input_buflen, size_t input_bufnum, size_t output_buflen);
+     Impl(const ClientOptions& opts, size_t input_buflen, size_t input_quelen, size_t output_buflen);
     ~Impl();
 
     void ExecuteQuery(Query query);
@@ -155,12 +155,12 @@ private:
 };
 
 
-Client::Impl::Impl(const ClientOptions& opts, size_t input_buflen, size_t input_bufnum, size_t output_buflen)
+Client::Impl::Impl(const ClientOptions& opts, size_t input_buflen, size_t input_quelen, size_t output_buflen)
     : options_(opts)
     , events_(nullptr)
     , socket_(-1)
     , socket_input_(socket_)
-    , buffered_input_(&socket_input_, input_buflen, input_bufnum)
+    , buffered_input_(&socket_input_, input_buflen, input_quelen)
     , input_(&buffered_input_)
     , socket_output_(socket_)
     , buffered_output_(&socket_output_, output_buflen)
@@ -429,23 +429,28 @@ bool Client::Impl::ReceivePacket(uint64_t* server_packet) {
 bool Client::Impl::ReadBlock(Block* block, CodedInputStream* input) {
     // Additional information about block.
     if (REVISION >= DBMS_MIN_REVISION_WITH_BLOCK_INFO) {
-        uint64_t num;
+        //uint64_t num;
         BlockInfo info;
 
         // BlockInfo
-        if (!WireFormat::ReadUInt64(input, &num)) {
+        //if (!WireFormat::ReadUInt64(input, &num)) {
+        if (!WireFormat::SkipUInt64(input)) {
             return false;
         }
-        if (!WireFormat::ReadFixed(input, &info.is_overflows)) {
+        //if (!WireFormat::ReadFixed(input, &info.is_overflows)) {
+        if (!WireFormat::SkipFixed(input, &info.is_overflows)) {
             return false;
         }
-        if (!WireFormat::ReadUInt64(input, &num)) {
+        //if (!WireFormat::ReadUInt64(input, &num)) {
+        if (!WireFormat::SkipUInt64(input)) {
             return false;
         }
-        if (!WireFormat::ReadFixed(input, &info.bucket_num)) {
+        //if (!WireFormat::ReadFixed(input, &info.bucket_num)) {
+        if (!WireFormat::SkipFixed(input, &info.is_overflows)) {
             return false;
         }
-        if (!WireFormat::ReadUInt64(input, &num)) {
+        //if (!WireFormat::ReadUInt64(input, &num)) {
+        if (!WireFormat::SkipUInt64(input)) {
             return false;
         }
 
@@ -488,11 +493,13 @@ bool Client::Impl::ReadBlock(Block* block, CodedInputStream* input) {
 }
 
 bool Client::Impl::ReceiveData(std::function<void(const Block&)> cb) {
-    Block block;
-    std::string table_name;
+    auto p_block = std::make_shared<Block>();
+    Block& block = *p_block;
+    //std::string table_name;
 
     // Read name of a table.
-    if (!WireFormat::ReadString(&input_, &table_name)) {
+    //if (!WireFormat::ReadString(&input_, &table_name)) {
+    if (!WireFormat::SkipString(&input_)) {
         return false;
     }
 
@@ -773,9 +780,9 @@ void Client::Impl::RetryGuard(std::function<void()> func) {
     }
 }
 
-Client::Client(const ClientOptions& opts, size_t input_buflen, size_t input_bufnum, size_t output_buflen)
+Client::Client(const ClientOptions& opts, size_t input_buflen, size_t input_quelen, size_t output_buflen)
     : options_(opts)
-    , impl_(new Impl(opts, input_buflen, input_bufnum, output_buflen))
+    , impl_(new Impl(opts, input_buflen, input_quelen, output_buflen))
 {
 }
 

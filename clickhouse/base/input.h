@@ -7,6 +7,8 @@
 #include <mutex>
 #include <condition_variable>
 
+#include "readerwriterqueue/readerwriterqueue.h"
+
 namespace clickhouse {
 
 class InputStream {
@@ -82,7 +84,7 @@ private:
 
 class BufferedInput : public ZeroCopyInput {
 public:
-    BufferedInput(InputStream* slave, size_t buflen = 8192, size_t bufnum = 2);
+    BufferedInput(InputStream* slave, size_t buflen = 8192, size_t quelen = 16);
     ~BufferedInput() override;
 
     void Reset();
@@ -98,15 +100,11 @@ private:
 private:
     InputStream* const slave_;
     ArrayInput array_input_;
-    int read_index_;
-    int recv_index_;
-    int ready_bufnum_;
-    int bufnum_;
-    std::vector<std::vector<uint8_t>> buffers_;
-    std::vector<size_t> recv_sizes_;
-    std::mutex recv_mtx_;
-    std::condition_variable recv_cv_;
-    std::thread recv_thr_;
+    size_t buflen_;
+    uint8_t* data_;
+    using queue_t = moodycamel::BlockingReaderWriterQueue<uint8_t*>;
+    //using queue_t = moodycamel::BlockingReaderWriterCircularBuffer<uint8_t*>;
+    queue_t data_queue_;
 };
 
 }

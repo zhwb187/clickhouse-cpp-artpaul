@@ -79,7 +79,7 @@ std::ostream& operator<<(std::ostream& os, const ClientOptions& options);
  */
 class Client {
 public:
-     Client(const ClientOptions& opts, size_t input_buflen = 1048576, size_t input_bufnum = 8, size_t output_buflen = 1048576);
+     Client(const ClientOptions& opts, size_t input_buflen = 1048576, size_t input_quelen = 128, size_t output_buflen = 1048576);
     ~Client();
 
     /// Intends for execute arbitrary queries.

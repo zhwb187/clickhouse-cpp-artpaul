@@ -47,17 +47,7 @@ bool ColumnFixedString::Load(CodedInputStream* input, size_t rows) {
 
     //    data_.push_back(std::move(s));
     //}
-    data_.resize(rows);
-    for (size_t i = 0; i < rows; ++i) {
-        auto& s = data_[i];
-        s.resize(string_size_);
-
-        if (!WireFormat::ReadBytes(input, &s[0], s.size())) {
-            return false;
-        }
-    }
-
-    return true;
+    return input->ReadFixedStringRows(data_, rows, string_size_);
 }
 
 void ColumnFixedString::Save(CodedOutputStream* output) {
@@ -124,16 +114,7 @@ bool ColumnString::Load(CodedInputStream* input, size_t rows) {
 
     //    data_.push_back(std::move(s));
     //}
-    data_.resize(rows);
-    for (size_t i = 0; i < rows; ++i) {
-        auto& s = data_[i];
-
-        if (!WireFormat::ReadString(input, &s)) {
-            return false;
-        }
-    }
-
-    return true;
+    return input->ReadStringRows(data_, rows);
 }
 
 void ColumnString::Save(CodedOutputStream* output) {

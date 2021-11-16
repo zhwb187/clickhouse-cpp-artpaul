@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <memory.h>
+#include <cstring>
 
 namespace clickhouse {
 
@@ -41,19 +42,13 @@ size_t ArrayInput::DoNext(const void** ptr, size_t len) {
 }
 
 
-BufferedInput::BufferedInput(InputStream* slave, size_t buflen, size_t bufnum)
+BufferedInput::BufferedInput(InputStream* slave, size_t buflen, size_t quelen)
     : slave_(slave)
     , array_input_(nullptr, 0)
-    //, buffer_(buflen)
-    , read_index_(0)
-    , recv_index_(0)
-    , ready_bufnum_(0)
-    , bufnum_(bufnum >= 2 ? bufnum : 2)
-    , buffers_(bufnum_)
-    , recv_sizes_(bufnum_)
+    , buflen_(buflen)
+    , data_(nullptr)
+    , data_queue_(quelen)
 {
-    for (auto& buf : buffers_)
-        buf.resize(buflen);
 }
 
 BufferedInput::~BufferedInput() = default;
@@ -64,20 +59,21 @@ void BufferedInput::Reset() {
 
 void BufferedInput::RecvData()
 {
-    std::unique_lock<std::mutex> lck(recv_mtx_);
-    lck.unlock();
+    std::vector<uint8_t> tmp(buflen_);
+    auto buf = tmp.data();
+    size_t read_len = 0;
+    uint8_t* data = nullptr;
     while (true)
     {
-        lck.lock();
-        ++ready_bufnum_;
-        recv_cv_.notify_one();
-        recv_cv_.wait(lck, [this]() { return ready_bufnum_ < bufnum_; });
-        lck.unlock();
+        read_len = slave_->Read(buf, buflen_);
+        data = new uint8_t[read_len + sizeof(size_t)];
+        *(reinterpret_cast<size_t*>(data)) = read_len;
+        std::memcpy(data + sizeof(size_t), buf, read_len);
 
-        ++recv_index_;
-        recv_index_ %= bufnum_;
-        auto& buffer_ = buffers_[recv_index_];
-        recv_sizes_[recv_index_] = slave_->Read(buffer_.data(), buffer_.size());
+        if (!data_queue_.enqueue(data))
+        {
+            throw std::runtime_error("enqueue memory allocation fails");
+        }
     }
 }
 
@@ -85,17 +81,9 @@ void BufferedInput::SwitchBuffer()
 {
     static std::thread recv_thr = std::thread([this]() { RecvData(); });
 
-    std::unique_lock<std::mutex> lck(recv_mtx_);
-    --ready_bufnum_;
-    recv_sizes_[read_index_] = 0;
-    recv_cv_.notify_one();
-    recv_cv_.wait(lck, [this]() { return ready_bufnum_ > 0; });
-    lck.unlock();
-
-    ++read_index_;
-    read_index_ %= bufnum_;
-    auto& buffer_ = buffers_[read_index_];
-    array_input_.Reset(buffer_.data(), recv_sizes_[read_index_]);
+    delete[] data_;
+    data_queue_.wait_dequeue(data_);
+    array_input_.Reset(data_ + sizeof(size_t), *(reinterpret_cast<size_t*>(data_)));
 }
 
 size_t BufferedInput::DoNext(const void** ptr, size_t len) {

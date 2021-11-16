@@ -2,6 +2,8 @@
 
 #include "columns/column.h"
 
+#include <memory>
+
 namespace clickhouse {
 
 struct BlockInfo {
@@ -9,7 +11,7 @@ struct BlockInfo {
     int32_t bucket_num = -1;
 };
 
-class Block {
+class Block: public std::enable_shared_from_this<Block> {
 public:
     /// Allow to iterate over block's columns.
     class Iterator {
@@ -60,6 +62,11 @@ public:
 
     /// Reference to column by index in the block.
     ColumnRef operator [] (size_t idx) const;
+
+    std::shared_ptr<Block> getptr()
+    {
+        return shared_from_this();
+    }
 
 private:
     struct ColumnItem {

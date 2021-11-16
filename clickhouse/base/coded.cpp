@@ -1,6 +1,7 @@
 #include "coded.h"
 
 #include <memory.h>
+#include <cstring>
 
 namespace clickhouse {
 
@@ -11,18 +12,33 @@ CodedInputStream::CodedInputStream(ZeroCopyInput* input)
 {
 }
 
-bool CodedInputStream::ReadRaw(void* buffer, size_t size) {
-    uint8_t* p = static_cast<uint8_t*>(buffer);
-
-    while (size > 0) {
-        const void* ptr;
-        size_t len = input_->Next(&ptr, size);
-
-        memcpy(p, ptr, len);
-
+//bool CodedInputStream::ReadRaw(void* buffer, size_t size) {
+//    uint8_t* p = static_cast<uint8_t*>(buffer);
+//
+//    while (size > 0) {
+//        const void* ptr;
+//        size_t len = input_->Next(&ptr, size);
+//
+//        memcpy(p, ptr, len);
+//
+//        p += len;
+//        size -= len;
+//    }
+//
+//    return true;
+//}
+bool CodedInputStream::ReadRaw(void* buffer, size_t size)
+{
+    auto p = static_cast<uint8_t*>(buffer);
+    const void* ptr;
+    size_t len;
+    do
+    {
+        len = input_->Next(&ptr, size);
+        std::memcpy(p, ptr, len);
         p += len;
         size -= len;
-    }
+    } while (size);
 
     return true;
 }
@@ -42,27 +58,168 @@ bool CodedInputStream::Skip(size_t count) {
     return true;
 }
 
-bool CodedInputStream::ReadVarint64(uint64_t* value) {
+//bool CodedInputStream::ReadVarint64(uint64_t* value) {
+//    *value = 0;
+//
+//    for (size_t i = 0; i < MAX_VARINT_BYTES; ++i) {
+//        uint8_t byte;
+//
+//        if (!input_->ReadByte(&byte)) {
+//            return false;
+//        } else {
+//            *value |= uint64_t(byte & 0x7F) << (7 * i);
+//
+//            if (!(byte & 0x80)) {
+//                return true;
+//            }
+//        }
+//    }
+//
+//    // TODO skip invalid
+//    return false;
+//}
+bool CodedInputStream::ReadVarint64(uint64_t* value)
+{
     *value = 0;
-
-    for (size_t i = 0; i < MAX_VARINT_BYTES; ++i) {
-        uint8_t byte;
-
-        if (!input_->ReadByte(&byte)) {
+    uint8_t byte;
+    if (input_->ReadByte(&byte))
+        *value = byte & 0x7FULL;
+    else
+        return false;
+    if (byte & 0x80)
+    {
+        if (input_->ReadByte(&byte))
+            *value |= (byte & 0x7FULL) << 7;
+        else
             return false;
-        } else {
-            *value |= uint64_t(byte & 0x7F) << (7 * i);
-
-            if (!(byte & 0x80)) {
-                return true;
+        if (byte & 0x80)
+        {
+            int lest_shift = 14;
+            int i = MAX_VARINT_BYTES;
+            --i;
+            while (--i)
+            {
+                if (input_->ReadByte(&byte))
+                {
+                    *value |= (byte & 0x7FULL) << lest_shift;
+                    if (!(byte & 0x80))
+                        return true;
+                    lest_shift += 7;
+                }
+                else
+                    return false;
             }
+            return false;
         }
     }
+    return true;
+}
 
-    // TODO skip invalid
+bool CodedInputStream::SkipVarint64()
+{
+    uint8_t byte;
+    for (size_t i = 0; i < MAX_VARINT_BYTES; ++i)
+    {
+        if (input_->ReadByte(&byte))
+        {
+            if (!(byte & 0x80)) 
+                return true;
+        }
+        else
+            return false;
+    }
     return false;
 }
 
+bool CodedInputStream::ReadStringRows(std::vector<std::string>& data, size_t rows)
+{
+    data.resize(rows);
+    auto ps = data.data();
+    uint8_t byte;
+    uint64_t len;
+    size_t size;
+    int i;
+    int lest_shift;
+    char* p;
+    const void* ptr;
+    ++rows;
+    while(--rows)
+    {
+        // load string length
+        if (input_->ReadByte(&byte))
+            len = byte & 0x7FULL;
+        else
+            return false;
+        if (byte & 0x80)
+        {
+            if (input_->ReadByte(&byte))
+                len |= (byte & 0x7FULL) << 7;
+            else
+                return false;
+            if (byte & 0x80)
+            {
+                lest_shift = 14;
+                i = MAX_VARINT_BYTES;
+                --i;
+                while (--i)
+                {
+                    if (input_->ReadByte(&byte))
+                    {
+                        len |= (byte & 0x7FULL) << lest_shift;
+                        if (!(byte & 0x80)) {
+                            break;
+                        }
+                        lest_shift += 7;
+                    }
+                    else
+                        return false;
+                }
+                if (!i)
+                    return false;
+            }
+        }
+        if (len > 0x00FFFFFFULL)
+            return false;
+        // load string data
+        ps->resize(len);
+        p = const_cast<char*>(ps->data());
+        do
+        {
+            size = input_->Next(&ptr, len);
+            std::memcpy(p, ptr, len);
+            p += size;
+            len -= size;
+        } while (len);
+        ++ps;
+    }
+    return true;
+}
+
+bool CodedInputStream::ReadFixedStringRows(std::vector<std::string>& data, size_t rows, size_t string_size)
+{
+    data.resize(rows);
+    auto ps = data.data();
+    char* p;
+    size_t len;
+    size_t size;
+    const void* ptr;
+    ++rows;
+    while (--rows)
+    {
+        ps->resize(string_size);
+        p = const_cast<char*>(ps->data());
+        len = string_size;
+        do
+        {
+            size = input_->Next(&ptr, len);
+            std::memcpy(p, ptr, len);
+            p += size;
+            len -= size;
+        } while (len);
+        ++ps;
+    }
+    return true;
+}
 
 CodedOutputStream::CodedOutputStream(ZeroCopyOutput* output)
     : output_(output)
