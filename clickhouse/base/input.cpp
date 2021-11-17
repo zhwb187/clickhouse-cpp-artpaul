@@ -1,6 +1,7 @@
 #include "input.h"
 
 #include <algorithm>
+#include <thread>
 #include <memory.h>
 #include <cstring>
 

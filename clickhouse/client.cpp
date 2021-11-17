@@ -493,8 +493,7 @@ bool Client::Impl::ReadBlock(Block* block, CodedInputStream* input) {
 }
 
 bool Client::Impl::ReceiveData(std::function<void(const Block&)> cb) {
-    auto p_block = std::make_shared<Block>();
-    Block& block = *p_block;
+    Block block;
     //std::string table_name;
 
     // Read name of a table.

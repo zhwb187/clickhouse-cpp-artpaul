@@ -3,9 +3,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
 
 #include "readerwriterqueue/readerwriterqueue.h"
 
