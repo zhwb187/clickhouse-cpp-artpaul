@@ -56,8 +56,12 @@ static ColumnRef CreateTerminalColumn(const TypeAst& ast) {
         return std::make_shared<ColumnDecimal>(38, ast.elements.front().value);
 
     case Type::String:
+        if (g_use_chars_for_string)
+            return std::make_shared<ColumnChars>();
         return std::make_shared<ColumnString>();
     case Type::FixedString:
+        if (g_use_chars_for_string)
+            return std::make_shared<ColumnFixedChars>(ast.elements.front().value);
         return std::make_shared<ColumnFixedString>(ast.elements.front().value);
 
     case Type::DateTime:

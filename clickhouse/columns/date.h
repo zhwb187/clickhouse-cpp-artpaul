@@ -36,6 +36,8 @@ public:
     /// Makes slice of the current column.
     ColumnRef Slice(size_t begin, size_t len) override;
 
+    const void* Data() const override { return data_->Data(); }
+
 private:
     std::shared_ptr<ColumnUInt16> data_;
 };
@@ -74,6 +76,8 @@ public:
     /// Makes slice of the current column.
     ColumnRef Slice(size_t begin, size_t len) override;
 
+    const void* Data() const override { return data_->Data(); }
+
 private:
     std::shared_ptr<ColumnUInt32> data_;
 };
@@ -111,6 +115,8 @@ public:
 
     /// Makes slice of the current column.
     ColumnRef Slice(size_t begin, size_t len) override;
+
+    const void* Data() const override { return data_->Data(); }
 
 private:
     std::shared_ptr<ColumnUInt64> data_;

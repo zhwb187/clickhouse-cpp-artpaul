@@ -22,6 +22,8 @@
 
 namespace clickhouse {
 
+void UseCharsForString(bool flag);
+
 /// Methods of block compression.
 enum class CompressionMethod {
     None    = -1,

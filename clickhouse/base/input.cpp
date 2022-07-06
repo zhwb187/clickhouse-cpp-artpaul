@@ -60,14 +60,20 @@ void BufferedInput::Reset() {
 
 void BufferedInput::RecvData()
 {
-    std::vector<uint8_t> tmp(buflen_);
-    auto buf = tmp.data();
-    size_t read_len = 0;
+    auto buf = new uint8_t[buflen_];
     uint8_t* data = nullptr;
+    size_t read_len = 0;
     while (true)
     {
-        read_len = slave_->Read(buf, buflen_);
-        data = new uint8_t[read_len + sizeof(size_t)];
+        try
+        {
+            read_len = slave_->Read(buf, buflen_);
+        }
+        catch (const std::exception& e)
+        {
+            break;
+        }
+        data = new uint8_t[sizeof(size_t) + read_len];
         *(reinterpret_cast<size_t*>(data)) = read_len;
         std::memcpy(data + sizeof(size_t), buf, read_len);
 
@@ -78,9 +84,15 @@ void BufferedInput::RecvData()
     }
 }
 
+
+std::thread detach_thread(std::thread thr)
+{
+    thr.detach();
+    return thr;
+}
 void BufferedInput::SwitchBuffer()
 {
-    static std::thread recv_thr = std::thread([this]() { RecvData(); });
+    static std::thread recv_thr = detach_thread(std::thread([this]() { RecvData(); }));
 
     delete[] data_;
     data_queue_.wait_dequeue(data_);

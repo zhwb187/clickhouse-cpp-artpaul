@@ -38,7 +38,9 @@ public:
     // crash the server because it can't allocate this much space at once.
     bool ReadString(std::string* buffer, int size);
     bool ReadStringRows(std::vector<std::string>& data, size_t rows);
+    bool ReadCharsRows(std::vector<char*>& data, size_t rows);
     bool ReadFixedStringRows(std::vector<std::string>& data, size_t rows, size_t string_size);
+    bool ReadFixedCharsRows(std::vector<char>& data, size_t rows, size_t string_size);
 
     // Skips a number of bytes.  Returns false if an underlying read error
     // occurs.

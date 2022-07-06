@@ -34,6 +34,12 @@
 
 namespace clickhouse {
 
+bool g_use_chars_for_string = false;
+void UseCharsForString(bool flag)
+{
+    g_use_chars_for_string = flag;
+}
+
 struct ClientInfo {
     uint8_t iface_type = 1; // TCP
     uint8_t query_kind;

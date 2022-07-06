@@ -195,6 +195,72 @@ bool CodedInputStream::ReadStringRows(std::vector<std::string>& data, size_t row
     return true;
 }
 
+bool CodedInputStream::ReadCharsRows(std::vector<char*>& data, size_t rows)
+{
+    data.resize(rows);
+    auto ps = data.data();
+    uint8_t byte;
+    uint64_t len;
+    size_t size;
+    int i;
+    int lest_shift;
+    char* p;
+    const void* ptr;
+    ++rows;
+    while (--rows)
+    {
+        // load string length
+        if (input_->ReadByte(&byte))
+            len = byte & 0x7FULL;
+        else
+            return false;
+        if (byte & 0x80)
+        {
+            if (input_->ReadByte(&byte))
+                len |= (byte & 0x7FULL) << 7;
+            else
+                return false;
+            if (byte & 0x80)
+            {
+                lest_shift = 14;
+                i = MAX_VARINT_BYTES;
+                --i;
+                while (--i)
+                {
+                    if (input_->ReadByte(&byte))
+                    {
+                        len |= (byte & 0x7FULL) << lest_shift;
+                        if (!(byte & 0x80)) {
+                            break;
+                        }
+                        lest_shift += 7;
+                    }
+                    else
+                        return false;
+                }
+                if (!i)
+                    return false;
+            }
+        }
+        if (len > 0x00FFFFFFULL)
+            return false;
+        // load string data
+        p = new char[sizeof(size_t) + len];
+        *ps = p;
+        *(reinterpret_cast<size_t*>(p)) = len;
+        p += sizeof(size_t);
+        do
+        {
+            size = input_->Next(&ptr, len);
+            std::memcpy(p, ptr, len);
+            p += size;
+            len -= size;
+        } while (len);
+        ++ps;
+    }
+    return true;
+}
+
 bool CodedInputStream::ReadFixedStringRows(std::vector<std::string>& data, size_t rows, size_t string_size)
 {
     data.resize(rows);
@@ -218,6 +284,23 @@ bool CodedInputStream::ReadFixedStringRows(std::vector<std::string>& data, size_
         } while (len);
         ++ps;
     }
+    return true;
+}
+
+bool CodedInputStream::ReadFixedCharsRows(std::vector<char>& data, size_t rows, size_t string_size)
+{
+    size_t len = rows * string_size;
+    data.resize(len);
+    char* p = const_cast<char*>(data.data());
+    size_t size;
+    const void* ptr;
+    do
+    {
+        size = input_->Next(&ptr, len);
+        std::memcpy(p, ptr, len);
+        p += size;
+        len -= size;
+    } while (len);
     return true;
 }
 

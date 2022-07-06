@@ -55,6 +55,10 @@ public:
     /// Makes slice of the current column.
     virtual ColumnRef Slice(size_t begin, size_t len) = 0;
 
+    virtual const void* Data() const  { return nullptr; }
+
+    virtual const void* Data2() const { return nullptr; }
+
 protected:
     TypeRef type_;
 };

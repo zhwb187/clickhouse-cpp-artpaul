@@ -40,6 +40,10 @@ public:
 
     void OffsetsIncrease(size_t);
 
+    const void* Data() const override { return data_->Data(); }
+
+    const void* Data2() const override { return offsets_->Data(); }
+
 private:
     size_t GetOffset(size_t n) const;
 

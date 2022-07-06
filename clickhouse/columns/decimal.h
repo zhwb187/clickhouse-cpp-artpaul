@@ -25,6 +25,7 @@ public:
     void Clear() override;
     size_t Size() const override;
     ColumnRef Slice(size_t begin, size_t len) override;
+    const void* Data() const override { return data_->Data(); }
 
 private:
     /// Depending on a precision it can be one of:
