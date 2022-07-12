@@ -47,9 +47,9 @@ TARGET_LINK_LIBRARIES (clickhouse-cpp-lib-static
 
 SET(LIB_NAME clickhouse)
 IF(MSVC)
-    SET(LIB_NAME "lib${LIB_NAME}_vc140")
+    #SET(LIB_NAME "lib${LIB_NAME}_vc140")
 ENDIF()
 IF(${CMAKE_BUILD_TYPE} STREQUAL Debug)
-    SET(LIB_NAME "${LIB_NAME}_d")
+    #SET(LIB_NAME "${LIB_NAME}_d")
 ENDIF()
 SET_TARGET_PROPERTIES(clickhouse-cpp-lib-static PROPERTIES OUTPUT_NAME "${LIB_NAME}")

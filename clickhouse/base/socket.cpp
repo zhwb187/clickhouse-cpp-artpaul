@@ -6,6 +6,8 @@
 #include <system_error>
 #include <unordered_set>
 #include <memory.h>
+#include <set>
+#include <iostream>
 
 #if !defined(_win_)
 #   include <errno.h>
@@ -21,6 +23,9 @@
 #endif
 
 namespace clickhouse {
+
+extern std::set<int> g_handle_connect_error_codes;
+
 namespace {
 
 class LocalNames : public std::unordered_set<std::string> {
@@ -256,7 +261,6 @@ NetworkInitializer::NetworkInitializer() {
     (void)Singleton<NetworkInitializerImpl>();
 }
 
-
 SOCKET SocketConnect(const NetworkAddress& addr) {
     int last_err = 0;
     for (auto res = addr.Info(); res != nullptr; res = res->ai_next) {
@@ -270,8 +274,11 @@ SOCKET SocketConnect(const NetworkAddress& addr) {
 
         if (connect(s, res->ai_addr, (int)res->ai_addrlen) != 0) {
             int err = errno;
+            std::cout << "socket connect to clickhouse db, error_code: " << err << std::endl;
             //if (err == EINPROGRESS || err == EAGAIN || err == EWOULDBLOCK) {
-            if (err == 0 || err == EINPROGRESS || err == EAGAIN || err == EWOULDBLOCK) {
+            //if (err == 0 || err == EINPROGRESS || err == EAGAIN || err == EWOULDBLOCK) {
+            //if (err == 0 || err == EINVAL || err == EINPROGRESS || err == EAGAIN || err == EWOULDBLOCK) {
+            if (g_handle_connect_error_codes.empty() || g_handle_connect_error_codes.count(err)) {
                 pollfd fd;
                 fd.fd = s;
                 fd.events = POLLOUT;
@@ -279,7 +286,7 @@ SOCKET SocketConnect(const NetworkAddress& addr) {
                 ssize_t rval = Poll(&fd, 1, 5000);
 
                 if (rval == -1) {
-                    throw std::system_error(errno, std::system_category(), "fail to connect");
+                    throw std::system_error(errno, std::system_category(), "fail to connect, 1");
                 }
                 if (rval > 0) {
                     socklen_t len = sizeof(err);
@@ -289,8 +296,21 @@ SOCKET SocketConnect(const NetworkAddress& addr) {
                         SetNonBlock(s, false);
                         return s;
                     }
-                   last_err = err;
+                    last_err = err;
                 }
+            }
+            else {
+                std::string err_msg = "fail to connect db, err=" + std::to_string(err);
+                err_msg += "; handle_connect_error_codes: { ";
+                for (auto c : g_handle_connect_error_codes)
+                {
+                    if (c != *g_handle_connect_error_codes.begin())
+                        err_msg += ", ";
+                    err_msg += std::to_string(c);
+                }
+                err_msg += " }";
+                std::cerr << err_msg << std::endl;
+                throw std::system_error(err, std::system_category(), err_msg);
             }
         } else {
             SetNonBlock(s, false);
@@ -298,10 +318,10 @@ SOCKET SocketConnect(const NetworkAddress& addr) {
         }
     }
     if (last_err > 0) {
-        throw std::system_error(last_err, std::system_category(), "fail to connect");
+        throw std::system_error(last_err, std::system_category(), "fail to connect, 2");
     }
     throw std::system_error(
-        errno, std::system_category(), "fail to connect"
+        errno, std::system_category(), "fail to connect, 3"
     );
 }
 

@@ -16,6 +16,9 @@
 #include "../types/type_parser.h"
 
 namespace clickhouse {
+
+extern bool g_use_chars_for_string;
+
 namespace {
 
 static ColumnRef CreateTerminalColumn(const TypeAst& ast) {

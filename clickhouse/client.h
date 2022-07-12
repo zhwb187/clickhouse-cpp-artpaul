@@ -19,10 +19,12 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <set>
 
 namespace clickhouse {
 
 void UseCharsForString(bool flag);
+void HandleConnectErrorCodes(std::set<int> codes);
 
 /// Methods of block compression.
 enum class CompressionMethod {

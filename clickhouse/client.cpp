@@ -40,6 +40,13 @@ void UseCharsForString(bool flag)
     g_use_chars_for_string = flag;
 }
 
+// { 0, 11, 22, 112, 115, 140 }
+std::set<int> g_handle_connect_error_codes = { };
+void HandleConnectErrorCodes(std::set<int> codes)
+{
+    g_handle_connect_error_codes = codes;
+}
+
 struct ClientInfo {
     uint8_t iface_type = 1; // TCP
     uint8_t query_kind;

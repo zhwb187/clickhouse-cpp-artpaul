@@ -32,6 +32,12 @@ PROJECT (CLICKHOUSE-CLIENT)
     INCLUDE_DIRECTORIES(.)
     INCLUDE_DIRECTORIES(contrib)
     INCLUDE_DIRECTORIES(std)
+    
+    SET(CMAKE_STATIC_LIBRARY_PREFIX "lib")
+    IF(MSVC)
+        set(CMAKE_DEBUG_POSTFIX "_vc140_d")
+        set(CMAKE_RELEASE_POSTFIX "_vc140")
+    ENDIF()
 
     SUBDIRS (
         clickhouse
