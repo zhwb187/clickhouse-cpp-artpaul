@@ -147,6 +147,7 @@ void SocketHolder::Close() noexcept {
 #if defined(_win_)
         closesocket(handle_);
 #else
+        shutdown(handle_, SHUT_RD);
         close(handle_);
 #endif
         handle_ = -1;

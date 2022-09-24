@@ -86,9 +86,12 @@ void BufferedInput::RecvData()
 
         if (!data_queue_.enqueue(data))
         {
+            delete[] buf;
+            buf = nullptr;
             throw std::runtime_error("enqueue memory allocation fails");
         }
     }
+    delete[] buf;
 }
 
 
