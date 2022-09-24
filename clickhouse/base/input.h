@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+#include <thread>
 
 #include "readerwriterqueue/readerwriterqueue.h"
 
@@ -99,6 +100,8 @@ private:
     ArrayInput array_input_;
     size_t buflen_;
     uint8_t* data_;
+    bool recv_flag_;
+    std::thread recv_thr_;
     using queue_t = moodycamel::BlockingReaderWriterQueue<uint8_t*>;
     //using queue_t = moodycamel::BlockingReaderWriterCircularBuffer<uint8_t*>;
     queue_t data_queue_;

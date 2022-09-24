@@ -1,7 +1,6 @@
 #include "input.h"
 
 #include <algorithm>
-#include <thread>
 #include <memory.h>
 #include <cstring>
 
@@ -48,11 +47,19 @@ BufferedInput::BufferedInput(InputStream* slave, size_t buflen, size_t quelen)
     , array_input_(nullptr, 0)
     , buflen_(buflen)
     , data_(nullptr)
+    , recv_flag_(false)
     , data_queue_(quelen)
 {
 }
 
-BufferedInput::~BufferedInput() = default;
+//BufferedInput::~BufferedInput() = default;
+BufferedInput::~BufferedInput()
+{
+    if (recv_thr_.joinable())
+    {
+        recv_thr_.join();
+    }
+}
 
 void BufferedInput::Reset() {
     array_input_.Reset(nullptr, 0);
@@ -85,15 +92,13 @@ void BufferedInput::RecvData()
 }
 
 
-std::thread detach_thread(std::thread thr)
-{
-    thr.detach();
-    return thr;
-}
 void BufferedInput::SwitchBuffer()
 {
-    static std::thread recv_thr = detach_thread(std::thread([this]() { RecvData(); }));
-
+    if (!recv_flag_)
+    {
+        recv_flag_ = true;
+        recv_thr_ = std::thread([this]() { RecvData(); });
+    }
     delete[] data_;
     data_queue_.wait_dequeue(data_);
     array_input_.Reset(data_ + sizeof(size_t), *(reinterpret_cast<size_t*>(data_)));

@@ -197,8 +197,11 @@ Client::Impl::Impl(const ClientOptions& opts, size_t input_buflen, size_t input_
     }
 }
 
+//Client::Impl::~Impl() {}
 Client::Impl::~Impl()
-{ }
+{
+    socket_.Close();
+}
 
 void Client::Impl::ExecuteQuery(Query query) {
     EnsureNull en(static_cast<QueryEvents*>(&query), &events_);
